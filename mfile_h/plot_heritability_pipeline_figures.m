@@ -19,7 +19,7 @@ outdir = 'D:\workspace\MEGConnHeritability_Manuscript\Figures\version3\Analysis 
 if ~exist(outdir,'dir'),mkdir(outdir),end
 
 %%
-save_flag = 1;
+save_flag = 0;
 data_flags = [1,2]; % 1 - meg, 2 - fmri
 measure_flags = [1,2]; % 1 - global, 2 - local
 
@@ -308,11 +308,11 @@ for imeasure = 1:length(measure_flags)
 
         sel_vmat = permute(vmat,[3,1,2]);
 
-        all_lind = (1:nsubj*nsubj)';
-        self_lind = (1:(nsubj+1):nsubj*nsubj)';
+        all_lind = find(tril(ones(nsubj),-1));
         mz_lind = sub2ind([nsubj,nsubj],imz,jmz);
         sib_lind = sub2ind([nsubj,nsubj],isib,jsib);
-        ur_lind = setdiff(all_lind,[self_lind; mz_lind; sib_lind]);
+        sib_lind2 = sub2ind([nsubj,nsubj],jsib,isib);
+        ur_lind = setdiff(all_lind,[mz_lind; sib_lind; sib_lind2]);
 
         nur = length(ur_lind);
 
@@ -410,4 +410,39 @@ for imeasure = 1:length(measure_flags)
     img_outfile = [outdir,'\',figure_name];
     img_outfile2 = [outdir,'\',figure_name,'_',dpi,'dpi'];
     save_figure_hp(fig,save_flag,img_outfile2,dpi,0,img_outfile)
+end
+
+%% supp info
+
+supp_dir = 'D:\Data\h_analysis_out\Supp_Data';
+supp_dir1 = fullfile(supp_dir,'data5');
+if ~exist(supp_dir1,'dir'),mkdir(supp_dir1),end
+
+vs_tit = {'MZ_vs_SIB','MZ_vs_UR','SIB_vs_UR'};
+
+for imeasure = 1:length(measure_flags)
+    measure_flag = measure_flags(imeasure);
+    if measure_flag == 1
+        measure_tag = 'GGM';
+    elseif measure_flag == 2
+        measure_tag = 'LGM';
+    end
+
+    for imethod = 1:length(fig_tits)
+        fig_tit0 = replace(fig_tits{imethod},' ','-');
+
+        V_mat0 = squeeze(VV_mat(imethod,:,imeasure));
+        pm_FDR0 = squeeze(pm_FDR(imethod,:,imeasure));
+
+        feature_norm = [];
+        feature_norm.MZ = V_mat0{1}';
+        feature_norm.SIB = V_mat0{2}';
+        feature_norm.UR = V_mat0{3}';
+        feature_norm.p_value_FDR = array2table(pm_FDR0,'VariableNames',vs_tit);
+
+        supp_file = fullfile(supp_dir1,[measure_tag,'_',fig_tit0,'.mat']);
+        if ~exist(supp_file,'file')
+            save(supp_file,'feature_norm')
+        end
+    end
 end

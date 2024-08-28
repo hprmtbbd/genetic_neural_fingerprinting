@@ -14,16 +14,19 @@ addpath(genpath(func_path),genpath(func2_path))
 
 if isempty(gcp('nocreate')), parpool(16,'IdleTimeout',600), end
 
-save_flag = 0;
-
-data_flag = 1; % 1 - meg, 2 - fmri
-measure_flag = 1; % 1 - global, 2 - local
+save_flag = 1;
+data_flag = 2; % 1 - meg, 2 - fmri
+measure_flag = 2; % 1 - global, 2 - local
 analysis_flags = 1:4; % 1- three class, 2- MZ vs UR, 3- MZ vs SIB, 4- SIB vs UR
 
 covar_flag = 0; % regress out covariates from features (graph measures)
 fs_flag = 0;
 
-diff_func = 'abs'; % abs corr
+if measure_flag == 1
+    diff_func = 'abs';
+elseif measure_flag == 2
+    diff_func = 'corr';
+end
 
 %% select MEG or fMRI
 if measure_flag == 1
@@ -51,10 +54,14 @@ elseif data_flag == 2
     npol = length(polarity_all);
 end
 
+% ML_fingerprint_v2/featsel_0 - true values
 outfolder = 'ML_fingerprint_v2';
 outfolder2 = ['featsel_',num2str(fs_flag)];
 outdir = fullfile(outdir_root,outfolder,outfolder2,[measure_tag,'_',data_tag]);
 if ~exist(outdir,'dir'),mkdir(outdir),end
+
+outdir_p = fullfile(outdir_root,outfolder,['perminds_',data_tag]);
+if ~exist(outdir_p,'dir'),mkdir(outdir_p),end
 
 %% load graph measures
 nmethod = length(connames);
@@ -164,44 +171,54 @@ for isubj = 1:nsubj
     end
 end
 
-phi0 = phi;
-phi0(1:nsubj+1:end) = 0;
+[imz,jmz,isib,jsib,nmz,nsib,fam_locs00,fam_locs] = extract_fam_inds(phi,famid,nsubj,data_flag);
 
 %%
-phi0_liu = tril(phi0,-1);
+% permute family relationships
 
-[imz,jmz] = find(phi0_liu==1);
+nperm = 1000; % 100 500 1000
+outfile_permstruc = fullfile(outdir_p,['fam_perminds_',num2str(nperm),'.mat']);
 
-if data_flag == 1
-   [isib,jsib] = find(phi0_liu==1/2);
-   
-   nmz = length(jmz); nsib = length(jsib);
-   
-   fam_locs00 = []; fam_locs = [];
-elseif data_flag == 2
-    u_famid = unique(famid,'stable');
-    mztwin_lia = sum(phi0==1,2)~=0;
-    
-    fam_locs = {}; mz_lia_all = logical([]);
-    for ifam = 1:length(u_famid)
-        famid_i = u_famid{ifam};
-        fam_ind = find(strcmp(famid_i,famid));
-        mz_lia = any(mztwin_lia(fam_ind));
-        fam_locs{ifam,1} = fam_ind';
-        mz_lia_all(ifam,1) = mz_lia;
+if ~exist(outfile_permstruc,'file')
+    out_perm_all = {};
+    for iperm = 1:nperm
+        perm_vec = randperm(nsubj);
+        phi_perm = phi(perm_vec,perm_vec);
+
+        famid_perm = famid(perm_vec);
+
+        [imz_p,jmz_p,isib_p,jsib_p,nmz_p,nsib_p,fam_locs00_p,fam_locs_p] = extract_fam_inds(phi_perm,famid_perm,nsubj,data_flag);
+        
+        out_perm = [];
+        out_perm.imz_p = imz_p;
+        out_perm.jmz_p = jmz_p;
+        out_perm.isib_p = isib_p;
+        out_perm.jsib_p = jsib_p;
+        out_perm.nmz_p = nmz_p;
+        out_perm.nsib_p = nsib_p;
+        out_perm.fam_locs00_p = fam_locs00_p;
+        out_perm.fam_locs_p = fam_locs_p;
+        out_perm.phi_perm = phi_perm;
+        
+        out_perm_all{iperm,1} = out_perm;
+        
+        % check perm
+        %{
+        [test_i,test_j] = find(phi==1/2);
+        lia_it = [];
+        for it = 1:length(test_i)
+        lia_it(it,1) = isequal([famid(test_i(it)),famid(test_j(it))],...
+            [famid_perm(find(perm_vec==test_i(it))),famid_perm(find(perm_vec==test_j(it)))]);
+        end
+        all(lia_it)
+        %}
+
     end
-    fam_size = cell2mat(cellfun(@length,fam_locs,'UniformOutput',0));
     
-    fam_locs0 = fam_locs(~mz_lia_all);
-    fam_size0 = fam_size(~mz_lia_all);
-    fam_locs00 = fam_locs0(fam_size0 > 1);
+    save(outfile_permstruc,'out_perm_all','-v7.3')
     
-    mz_fams = fam_locs(mz_lia_all);
-    
-    isib = cell2mat(cellfun(@(x) x(1),fam_locs00,'UniformOutput',0));
-    jsib = cell2mat(cellfun(@(x) x(2),fam_locs00,'UniformOutput',0));
-    
-    nmz = length(jmz); nsib = length(jsib);
+else
+    load(outfile_permstruc) 
 end
 
 %%
@@ -268,6 +285,7 @@ for ia = 1:length(analysis_flags)
         row_tit = tits([2,3,4]);
         class_tag = [tit_a{2},'-',tit_a{3}];
     end
+    nmetric = length(row_tit);
     
     outfile = fullfile(outdir,[model_tag,'_',class_tag,'.mat']);
     
@@ -313,6 +331,93 @@ for ia = 1:length(analysis_flags)
     end
     
     %%
+    
+    outfile_perm = fullfile(outdir,[model_tag,'_',class_tag,'_perm',num2str(nperm),'.mat']);
+    
+    if ~exist(outfile_perm,'file')
+        
+        ML_STATS_perm = {};
+        
+        tic
+        for imethod = 1:nmethod
+            disp(connames{imethod})
+            
+            if data_flag == 1
+                
+                if measure_flag == 1
+                    ggm0 = squeeze(m_ggm(:,:,:,imethod));
+                    dat = reshape(ggm0,[nsubj,nfeat]);
+                    feat_names = reshape(m_tit(:,:,imethod),[nfeat,1]);
+                elseif measure_flag == 2
+                    ggm0 = squeeze(m_ggm(:,:,:,:,imethod));
+                    dat = reshape(ggm0,nsubj,[],nfeat);
+                    feat_names = reshape(m_tit(:,:,imethod),[nfeat,1]);
+                end
+                
+            elseif data_flag == 2
+                dat = m_ggm;
+                feat_names = m_tit;
+            end
+            
+            dat_c =  parallel.pool.Constant(dat);
+            out_perm_all_c = parallel.pool.Constant(out_perm_all);
+            
+            acc_perm = NaN(niter,nfold,nperm);
+            auc_perm = NaN(niter,nfold,nmetric,nperm);
+            parfor iperm = 1:nperm
+                % disp(['Perm: ',num2str(iperm)])
+                
+                out_perm = out_perm_all_c.Value{iperm};
+                imz_p = out_perm.imz_p;
+                jmz_p = out_perm.jmz_p;
+                isib_p = out_perm.isib_p;
+                jsib_p = out_perm.jsib_p;
+                nmz_p = out_perm.nmz_p;
+                nsib_p = out_perm.nsib_p;
+                fam_locs00_p = out_perm.fam_locs00_p;
+                fam_locs_p = out_perm.fam_locs_p;
+                phi_perm = out_perm.phi_perm;
+                
+                ML_STATS = run_fingerprint(dat_c.Value,covar_dat,feat_names,imz_p,jmz_p,isib_p,jsib_p,phi_perm,fam_locs_p,fam_locs00_p,nsubj,nmz_p,nsib_p,analysis_flag,data_flag,measure_flag,covar_flag,nfold,niter,fs_flag,diff_func0,dist_func0,fitmodel,input_add);
+                
+                acc_all = ML_STATS.acc_all;
+                auc_all = ML_STATS.auc_all;
+                acc_perm(:,:,iperm) = acc_all;
+                auc_perm(:,:,:,iperm) = auc_all;
+            end
+            
+            ML_STATS_perm0 = [];
+            ML_STATS_perm0.acc_perm = acc_perm;
+            ML_STATS_perm0.auc_perm = auc_perm;
+            
+            ML_STATS_perm{imethod,1} = ML_STATS_perm0;
+            
+        end
+        toc
+        
+        %%
+        if save_flag
+            save(outfile_perm,'ML_STATS_perm')
+        end
+        
+    else
+        load(outfile_perm)
+    end
+    
+    px_perm = [];
+    for imethod = 1:nmethod
+        m_acc_perm = squeeze(mean(ML_STATS_perm{imethod}.acc_perm,[1,2]));
+        m_acc = squeeze(mean(ML_STATS_all{imethod}.acc_all,[1,2]));
+        m_auc_perm = squeeze(mean(ML_STATS_perm{imethod}.auc_perm(:,:,nmetric,:),[1,2]));
+        m_auc = squeeze(mean(ML_STATS_all{imethod}.auc_all(:,:,nmetric,:),[1,2]));
+        
+        [sig_acc,px_acc,pj_acc,xj_acc] = perm_test(m_acc,m_acc_perm,0.05,1);
+        [sig_auc,px_auc,pj_auc,xj_auc] = perm_test(m_auc,m_auc_perm,0.05,1);
+        
+        px_perm(imethod,:) = [px_acc,px_auc];
+    end
+    
+    %%
     disp('-----------------------------------------------------------------')
     disp(class_tag)
     c_all = {};
@@ -329,6 +434,7 @@ for ia = 1:length(analysis_flags)
         disp(['TNR: ',num2str(squeeze(nanmean(ML_STATS.tnr_all,[1,2]))')])
         disp(['PPV: ',num2str(squeeze(nanmean(ML_STATS.ppv_all,[1,2]))')])
         disp(['AUC: ',num2str(squeeze(nanmean(ML_STATS.auc_all,[1,2]))')])
+        disp(['Permutation test p-value: ',num2str(px_perm(imethod,:))])
         
         c1 = compose('%0.3f +/- %0.3f',squeeze(nanmean(ML_STATS.tpr_all,[1,2])),squeeze(nanstd(ML_STATS.tpr_all,[],[1,2])));
         c2 = compose('%0.3f +/- %0.3f',squeeze(nanmean(ML_STATS.tnr_all,[1,2])),squeeze(nanstd(ML_STATS.tnr_all,[],[1,2])));

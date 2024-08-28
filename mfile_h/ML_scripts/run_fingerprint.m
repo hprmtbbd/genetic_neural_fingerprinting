@@ -5,8 +5,8 @@ acc_all = [];
 cmat_all = []; tpr_all = []; tnr_all = []; ppv_all = []; auc_all = [];
 sel_feats_all = {};
 
-parfor itr = 1:niter % parfor
-    disp([num2str(itr),'/',num2str(niter)])
+for itr = 1:niter % parfor
+    % disp([num2str(itr),'/',num2str(niter)])
     
     if data_flag == 1
         % randomly pair unrelated subjects

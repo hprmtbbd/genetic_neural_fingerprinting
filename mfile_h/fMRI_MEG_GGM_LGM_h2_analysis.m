@@ -1251,3 +1251,106 @@ for imethod = 1:size(H2,3)
     save_figure_hp(h,save_flag_png,img_outfile2,dpi,save_flag_fig,img_outfile)
 end
 
+%% supplementary data
+out_supp = fullfile(outpath_root,'Supp_Data');
+if ~exist(out_supp,'dir'),mkdir(out_supp),end
+
+% supp data 1 - h2 of MEG (source space) and fMRI global graph measures
+out_supp1 = fullfile(out_supp,'data1.xlsx');
+
+tok_tmp = cellfun(@(x) strsplit(x,'_'),MEG_GGM_H2_Source.tit_ggm','UniformOutput',0);
+tok_tmp1 = vertcat(tok_tmp{:});
+out_meg = [MEG_GGM_H2_Source.h_all,MEG_GGM_H2_Source.he_all,pFDR_GGM_MEG];
+Out_meg_tit = {'Frequency Band','Connectivity Network','Graph Measure',...
+    'h2 value','h2 standard error','h2 p-value (FDR)'};
+Out_meg = [Out_meg_tit; tok_tmp1(:,3),tok_tmp1(:,2),tok_tmp1(:,1),num2cell(out_meg)];
+
+tok_tmp = cellfun(@(x) strsplit(x,'_'),MEG_GGM_H2_Sensor.tit_ggm','UniformOutput',0);
+tok_tmp1 = vertcat(tok_tmp{:});
+out_meg_sensor = [MEG_GGM_H2_Sensor.h_all,MEG_GGM_H2_Sensor.he_all];
+Out_meg_tit_sensor = {'Frequency Band','Connectivity Network','Graph Measure',...
+    'h2 value','h2 standard error'};
+Out_meg_sensor = [Out_meg_tit_sensor; tok_tmp1(:,3),tok_tmp1(:,2),tok_tmp1(:,1),num2cell(out_meg_sensor)];
+
+tok_tmp = cellfun(@(x) strsplit(x,'_'),fMRI_GGM_H2.tit_ggm','UniformOutput',0);
+tok_tmp1 = vertcat(tok_tmp{:});
+out_fmri = [fMRI_GGM_H2.h_all,fMRI_GGM_H2.he_all,pFDR_GGM_fMRI];
+pol_tit = replace(tok_tmp1(:,4),{'pos','neg'},{'Positive Cor','Negative Cor'});
+Out_fmri_tit = {'Correlation Network','Graph Measure',...
+    'h2 value','h2 standard error','h2 p-value (FDR)'};
+Out_fmri = [Out_fmri_tit; pol_tit,tok_tmp1(:,2),num2cell(out_fmri)];
+
+if ~exist(out_supp1,'file')
+    xlswrite(out_supp1,Out_meg,'MEG (source space)')
+    xlswrite(out_supp1,Out_fmri,'fMRI')
+    xlswrite(out_supp1,Out_meg_sensor,'MEG (sensor space)')
+end
+
+%% supp data 2 - h2 of MEG (source space) and fMRI local graph measures
+out_supp2 = fullfile(out_supp,'data2.xlsx');
+
+node_tmp = cellfun(@(x) strsplit(x,', '),nodelabel,'UniformOutput',0);
+node_tmp1 = cellfun(@(x) x{1},node_tmp,'UniformOutput',0);
+node_tmp2 = cellfun(@(x) x{2},node_tmp,'UniformOutput',0);
+
+node_tmp20 = cellfun(@(x) strsplit(x,' '),node_tmp2,'UniformOutput',0);
+node_tmp21 = cellfun(@(x) x{1},node_tmp20,'UniformOutput',0);
+node_tmp22 = replace(cellfun(@(x) x{end},node_tmp20,'UniformOutput',0),'Precuneus','');
+
+node_tmp3 = strcat(node_tmp21,{' '},node_tmp1,{' '},node_tmp22);
+
+node_tit0 = strcat('Node',cellfun(@num2str,num2cell((1:nnode)'),'UniformOutput',0));
+
+tok_tmp = cellfun(@(x) strsplit(x,'_'),MEG_LGM_H2.tit_lgm','UniformOutput',0);
+tok_tmp1 = vertcat(tok_tmp{:});
+out_meg = [MEG_LGM_H2.h_all,MEG_LGM_H2.he_all,pFDR_LGM_MEG];
+[~,node_loc] = ismember(tok_tmp1(:,1),node_tit0);
+node_tit = node_tmp3(node_loc);
+Out_meg_tit = {'Frequency Band','Connectivity Network','Graph Measure','Braintomme Region'...
+    'h2 value','h2 standard error','h2 p-value (FDR)'};
+Out_meg = [Out_meg_tit; tok_tmp1(:,4),tok_tmp1(:,3),tok_tmp1(:,2),node_tit,num2cell(out_meg)];
+
+tok_tmp = cellfun(@(x) strsplit(x,'_'),fMRI_LGM_H2.tit_lgm','UniformOutput',0);
+tok_tmp1 = vertcat(tok_tmp{:});
+out_fmri = [fMRI_LGM_H2.h_all,fMRI_LGM_H2.he_all,pFDR_LGM_fMRI];
+pol_tit = replace(tok_tmp1(:,5),{'pos','neg'},{'Positive Cor','Negative Cor'});
+[~,node_loc] = ismember(tok_tmp1(:,2),node_tit0);
+node_tit = node_tmp3(node_loc);
+Out_fmri_tit = {'Correlation Network','Graph Measure','Braintomme Region'...
+    'h2 value','h2 standard error','h2 p-value (FDR)'};
+Out_fmri = [Out_fmri_tit; pol_tit,tok_tmp1(:,3),node_tit,num2cell(out_fmri)];
+
+if ~exist(out_supp2,'file')
+    xlswrite(out_supp2,Out_meg,'MEG')
+    xlswrite(out_supp2,Out_fmri,'fMRI')
+end
+
+%% supp data 3 - similarity of h2 of MEG and fMRI local graph measures
+out_supp3 = fullfile(out_supp,'data3.xlsx');
+
+tok_tmp = cellfun(@(x) strsplit(x,'_'),u_fmri_feat,'UniformOutput',0);
+tok_tmp1 = vertcat(tok_tmp{:});
+lgm_feat_tit = tok_tmp1(:,1);
+pol_tit = replace(tok_tmp1(:,3),{'pos','neg'},{'Positive Cor','Negative Cor'});
+
+out_DC = {}; out_DT = {};
+k = 0;
+for ic = 1:size(DC_fmri,1)
+    for jc = 1:size(DC_fmri,2)
+        k = k+1;
+        out_DC(k,:) = [lgm_feat_tit{ic},pol_tit{ic},u_meg_feat{jc},num2cell(DC_fmri(ic,jc))];
+        out_DT(k,:) = [lgm_feat_tit{ic},pol_tit{ic},u_meg_feat{jc},...
+            num2cell(DT_fmri(ic,jc)),num2cell(PT_fmri_FDR(ic,jc))];
+    end
+end
+
+Out_DC_tit = {'Graph Measure','fMRI Correlation Network','MEG Connectivity Network','DSC'};
+Out_DC = [Out_DC_tit; out_DC];
+
+Out_DT_tit = {'Graph Measure','fMRI Correlation Network','MEG Connectivity Network','mean[h2(MEG)-h2(fMRI)]','p-value (FDR)'};
+Out_DT = [Out_DT_tit; out_DT];
+
+if ~exist(out_supp3,'file')
+    xlswrite(out_supp3,Out_DT,'signed-rank test')
+    xlswrite(out_supp3,Out_DC,'DSC')
+end
