@@ -1,27 +1,23 @@
 
 clear,clc
 
-indir_root = 'E:'; % F
-indir = fullfile(indir_root,'UT-Austin','h_analysis');
+indir_root = 'E:'; % location of saved graph measures and SOLAR heritability h2 values
+indir = fullfile(indir_root,'h_analysis');
 indir_meg = fullfile(indir,'phaatef_MEG_LGM_genetictest');
 indir_fmri = fullfile(indir,'phaatef_fMRI_LGM_genetictest');
 indir_meg_ggm = fullfile(indir,'phaatef_MEG_GGM_genetictest');
 indir_fmri_ggm = fullfile(indir,'phaatef_fMRI_GGM_genetictest_v2');
 
-workspace_path = 'D:\workspace';
-toolbox_path = fullfile(workspace_path,'MATLAB','toolbox');
+workspace_path = 'D:\workspace'; % location of scripts and functions
+toolbox_path = fullfile(workspace_path,'toolbox');
 bnet_path = fullfile(toolbox_path,'BrainNetViewer_20191031');
-func_path = fullfile(workspace_path,'MEGConnHeritability_Manuscript','mfile_h');
-func_path2 = fullfile(workspace_path,'MATLAB','functions');
+func_path = fullfile(workspace_path,'mfile_h');
+func_path2 = fullfile(workspace_path,'functions');
+matfile_path = fullfile(workspace_path,'mfile_h','HCP');
 addpath(genpath(bnet_path),genpath(func_path),genpath(func_path2))
 
-proj_path = fullfile(workspace_path,'MEGConnHeritability_Manuscript');
-analysis_path = fullfile(proj_path,'h_analysis');
-matfile_path = fullfile(workspace_path,'MEGConnHeritability_Manuscript','mfile_h','HCP');
-
-outpath_root = 'D:\Data\h_analysis_out';
-
-outdir_fig = fullfile(proj_path,'Figures','version3');
+outpath_root = 'D:\Data\h_analysis_out'; % directory to save output files
+outdir_fig = fullfile(outpath_root,'Figures');
 
 nodelabel_file = fullfile(matfile_path,'brainnetomeLabel.mat');
 nodeloc_file = fullfile(matfile_path,'brainnetomeMedoidLocation_4mm.mat');
@@ -96,7 +92,7 @@ end
 outfile = fullfile(outpath_root,'SOLAR_fMRI','fMRI_LGM_100%PropThres_hval.mat');
 
 if ~exist(outfile,'file')
-    infile_LGM = fullfile(analysis_path,'HCP_fMRI_LGM_Source_100%PropThres.csv');
+    infile_LGM = fullfile(indir_fmri,'HCP_fMRI_LGM_Source_100%PropThres.csv');
     T = readtable(infile_LGM);
     tit = T.Properties.VariableNames;
     fmri_subjid = cellfun(@num2str,num2cell(T.ID),'UniformOutput',false);
@@ -712,7 +708,7 @@ sig_feat_ind = true(size(meg_feat));
 meg_feat0 = meg_feat(sig_feat_ind);
 h_mat_meg0 = h_mat_meg(:,sig_feat_ind);
 
-outpath_kmeans = fullfile(analysis_path,'kmeans');
+outpath_kmeans = fullfile(outpath_root,'kmeans');
 if xlsout_save_flag
     if ~exist(outpath_kmeans,'dir'),mkdir(outpath_kmeans),end
 end
