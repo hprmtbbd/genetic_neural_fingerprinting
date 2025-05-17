@@ -271,7 +271,7 @@ for imeasure = 1:length(measure_flags)
     end
 
     %%
-    % compare distance features between three groups (MZ, DZ, and SIB)
+    % compare distance features between three groups (MZ, SIB, and UR)
     p_mat = [];
     for isel_feat = 1:size(V_mat,1)
         mz_Dmat0 = V_mat{isel_feat,1};
