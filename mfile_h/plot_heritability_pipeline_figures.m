@@ -3,22 +3,18 @@ clear,clc
 
 % written for MATLAB R2023b (needed newer version for swarmchat and boxchart)
 
-workspace_path = 'D:\workspace';
-proj_path = fullfile(workspace_path,'MEGConnHeritability_Manuscript');
-analysis_path = fullfile(proj_path,'h_analysis');
+workspace_path = 'D:\workspace'; % location of scripts and functions
+func_path = fullfile(workspace_path,'functions');
+addpath(genpath(func_path))
 
-toolbox_path = fullfile(workspace_path,'MATLAB','toolbox');
-func_path = fullfile(workspace_path,'MATLAB','functions');
+indir_root = 'E:'; % location of saved graph measures, SOLAR heritability h2 values, and family relationship labels
+indir = fullfile(indir_root,'h_analysis');
 
-excel_path = analysis_path;
-
-addpath('D:\workspace\MEGConnHeritability_Manuscript\mfile_h\1',...
-    genpath(func_path))
-
-outdir = 'D:\workspace\MEGConnHeritability_Manuscript\Figures\version3\Analysis Pipeline';
+outpath_root = 'D:\Data\h_analysis_out'; % directory to save output files
+outdir = fullfile(outpath_root,'Figures');
 if ~exist(outdir,'dir'),mkdir(outdir),end
 
-%%
+%% define datasets (MEG and fMRI) and graph measures (global and local) to analyze
 save_flag = 0;
 data_flags = [1,2]; % 1 - meg, 2 - fmri
 measure_flags = [1,2]; % 1 - global, 2 - local
@@ -41,13 +37,13 @@ for imeasure = 1:length(measure_flags)
         Gnames = {'STR','EVC','CC','NE'};
         nnode = 246;
     end
-
+    
     V_mat = {}; fig_tits = {};
     for idata = 1:length(data_flags)
         data_flag = data_flags(idata);
 
         if data_flag == 1
-            infile = fullfile(analysis_path,['HCP_MEG_',measure_tag,'_Source_100%PropThres.csv']);
+            infile = fullfile(indir,['HCP_MEG_',measure_tag,'_Source_100%PropThres.csv']);
             data_tag = 'MEG';
 
             connames = {'dwPLI','AEC','lcAEC'};
@@ -55,7 +51,7 @@ for imeasure = 1:length(measure_flags)
             freqBands = {'Delta','Theta','Alpha','lBeta','hBeta','lGamma'};
             nfreq = length(freqBands);
         elseif data_flag == 2
-            infile = fullfile(analysis_path,['HCP_fMRI_',measure_tag,'_Source_100%PropThres.csv']);
+            infile = fullfile(indir,['HCP_fMRI_',measure_tag,'_Source_100%PropThres.csv']);
             data_tag = 'fMRI';
 
             polarity_all = {'pos','neg'};
@@ -125,7 +121,7 @@ for imeasure = 1:length(measure_flags)
         end
 
         %% construct relationship matrix
-        csv_path = analysis_path;
+        csv_path = indir;
         csv_infile = fullfile(csv_path,'HCP-YA_allSubjects_pedGT.csv');
         opts = detectImportOptions(csv_infile);
         opts.SelectedVariableNames = {'ID','FA','MO','FAMID','MZTWIN'};
@@ -220,60 +216,8 @@ for imeasure = 1:length(measure_flags)
 
             nmz = length(jmz); nsib = length(jsib);
         end
-
-        %%
-        if 0 % data_flag == 1
-            if measure_flag == 1
-                sel_feat = [3,1,1];
-                dat = m_ggm(:,sel_feat(1),sel_feat(2),sel_feat(3));
-            elseif measure_flag == 2
-                sel_feat = [3,4,1];
-                dat = m_ggm(:,:,sel_feat(1),sel_feat(2),sel_feat(3));
-            end
-            tit = m_tit(sel_feat(1),sel_feat(2),sel_feat(3));
-            pdat = (dat - mean(dat))./std(dat);
-
-            jj = [jj_mz; jj_sib; jj_single];
-
-            if measure_flag == 1
-                pdat_sort = pdat(jj);
-                D_sort = abs(pdat_sort-pdat_sort');
-            elseif measure_flag == 2
-                pdat_sort = pdat(jj,:);
-                D_sort = pdist2(pdat_sort,pdat_sort,'correlation');
-                R_sort = corr(pdat_sort,pdat_sort);
-            end
-
-            sel_inds = [21:22,7:8,13:14];
-            R_sel = D_sort(sel_inds,sel_inds);
-            R_sel0 = (R_sel-min(R_sel(:)))./(max(R_sel(:))-min(R_sel(:)));
-            Itriu = ones(length(R_sel)); % triu(ones(length(R_sel)));
-            R_sel0(~Itriu) = NaN;
-
-            % labs = strcat({'MZ Twin Pair '},{'1a','1b','2a','2b','3a','3b'});
-            labs = strcat({'MZ '},{'1a','1b','2a','2b','3a','3b'});
-
-            figure_name = 'example_Graph_measure_distance_matrix';
-
-            screenPos = get(0,'ScreenSize');
-            fig = figure('Position',[20,20,screenPos(3)*0.5,screenPos(4)*0.8]);
-            h = heatmap(labs,labs,R_sel0,'CellLabelColor','none');
-            h.ColorLimits = [min(R_sel0(:)),max(R_sel0(:))];
-            h.FontSize = 20;
-            h.ColorbarVisible = 'off';
-            s = struct(h);
-            s.XAxis.TickLabelRotation = 0;
-            % title('\fontsize{20} \bf{Input features: Graph measure distance scores}');
-            colormap(brewermap([],'Reds'))
-
-            img_outfile = fullfile(outdir,figure_name);
-            if save_flag
-                print(fig,img_outfile,'-dpng','-r600')
-                saveas(fig,img_outfile)
-            end
-        end
-
-        %%
+        
+        %% compute distance features from graph measures
         pfeats = (m_ggm - mean(m_ggm,1))./std(m_ggm,[],1);
 
         if measure_flag == 1
@@ -327,7 +271,7 @@ for imeasure = 1:length(measure_flags)
     end
 
     %%
-    
+    % compare distance features between three groups (MZ, DZ, and SIB)
     p_mat = [];
     for isel_feat = 1:size(V_mat,1)
         mz_Dmat0 = V_mat{isel_feat,1};
@@ -344,7 +288,7 @@ for imeasure = 1:length(measure_flags)
     pp_mat(:,:,imeasure) = p_mat;
 end
 
-%%
+%% plot group comparison of graph measure distance features
 group_labels = {'MZ Twins',['Non-MZ\newline',char(8201),'Siblings'],'Unrelated\newline Subjects'};
 groups = {[1,2],[1,3],[2,3]};
 
@@ -412,9 +356,9 @@ for imeasure = 1:length(measure_flags)
     save_figure_hp(fig,save_flag,img_outfile2,dpi,0,img_outfile)
 end
 
-%% supp info
+%% save supp info
 
-supp_dir = 'D:\Data\h_analysis_out\Supp_Data';
+supp_dir = fullfile(outpath_root,'Supp_Data');
 supp_dir1 = fullfile(supp_dir,'data5');
 if ~exist(supp_dir1,'dir'),mkdir(supp_dir1),end
 
