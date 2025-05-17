@@ -1,7 +1,7 @@
 
 clear,clc
 
-indir_root = 'E:'; % location of saved graph measures and SOLAR heritability h2 values
+indir_root = 'E:'; % % location of saved graph measures, SOLAR heritability h2 values, and family relationship labels
 indir = fullfile(indir_root,'h_analysis');
 indir_meg = fullfile(indir,'phaatef_MEG_LGM_genetictest');
 indir_fmri = fullfile(indir,'phaatef_fMRI_LGM_genetictest');
@@ -34,11 +34,11 @@ xlsout_save_flag = 0;
 
 if ~exist(outdir_fig,'dir'),mkdir(outdir_fig),end
 
-%% load meg LGM h2 values
+%% load meg LGM h2 values and save
 outfile = fullfile(outpath_root,'SOLAR','MEG_LGM_Source_100%PropThres_hval.mat');
 
 if ~exist(outfile,'file')
-    infile_LGM = fullfile(indir_meg,'HCP_MEG_LGM_Source_100%PropThres.csv');
+    infile_LGM = fullfile(indir,'HCP_MEG_LGM_Source_100%PropThres.csv');
     tab = readtable(infile_LGM);
     
     tit = tab.Properties.VariableNames;
@@ -88,11 +88,11 @@ else
     load(outfile)
 end
 
-%% load fmri LGM h2 values
+%% load fmri LGM h2 values and save
 outfile = fullfile(outpath_root,'SOLAR_fMRI','fMRI_LGM_100%PropThres_hval.mat');
 
 if ~exist(outfile,'file')
-    infile_LGM = fullfile(indir_fmri,'HCP_fMRI_LGM_Source_100%PropThres.csv');
+    infile_LGM = fullfile(indir,'HCP_fMRI_LGM_Source_100%PropThres.csv');
     T = readtable(infile_LGM);
     tit = T.Properties.VariableNames;
     fmri_subjid = cellfun(@num2str,num2cell(T.ID),'UniformOutput',false);
@@ -145,11 +145,11 @@ else
     load(outfile)
 end
 
-%% load meg GGM h2 values
+%% load meg GGM h2 values and save
 outfile = fullfile(outpath_root,'SOLAR','MEG_GGM_Source_100%PropThres_hval.mat');
 
 if ~exist(outfile,'file')
-    infile_GGM = fullfile(indir_meg_ggm,'HCP_MEG_GGM_Source_100%PropThres.csv');
+    infile_GGM = fullfile(indir,'HCP_MEG_GGM_Source_100%PropThres.csv');
     tab = readtable(infile_GGM);
     
     tit = tab.Properties.VariableNames;
@@ -194,11 +194,11 @@ else
     load(outfile)
 end
 
-%% load fmri GGM h2 values
+%% load fmri GGM h2 values and save
 outfile = fullfile(outpath_root,'SOLAR_fMRI','fMRI_GGM_100%PropThres_hval.mat');
 
 if ~exist(outfile,'file')
-    infile_GGM = fullfile(indir_fmri_ggm,'HCP_fMRI_GGM_Source_100%PropThres.csv');
+    infile_GGM = fullfile(indir,'HCP_fMRI_GGM_Source_100%PropThres.csv');
     tab = readtable(infile_GGM);
     
     tit = tab.Properties.VariableNames;
@@ -1139,7 +1139,7 @@ if xlsout_save_flag
     xlswrite(outfile_s1,tab_struc_fmri0,'fMRI')
 end
 
-%% load meg GGM h2 values (sensor space)
+%% load meg GGM h2 values (sensor space) and save
 MEG_GGM_H2_Source = MEG_GGM_H2;
 
 indir_meg_ggm_sensor = fullfile(indir,'phaatef_MEG_GGM_Sensor_genetictest');
@@ -1247,7 +1247,7 @@ for imethod = 1:size(H2,3)
     save_figure_hp(h,save_flag_png,img_outfile2,dpi,save_flag_fig,img_outfile)
 end
 
-%% supplementary data
+%% save supplementary data
 out_supp = fullfile(outpath_root,'Supp_Data');
 if ~exist(out_supp,'dir'),mkdir(out_supp),end
 
