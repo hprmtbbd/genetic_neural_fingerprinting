@@ -1,20 +1,20 @@
 
 clear,clc
 
-workspace_path = 'D:\workspace';
-proj_path = fullfile(workspace_path,'MEGConnHeritability_Manuscript');
-analysis_path = fullfile(proj_path,'h_analysis');
+workspace_path = 'D:\workspace'; % location of scripts and functions
+func_path = fullfile(workspace_path,'mfile_h');
+func_path2 = fullfile(workspace_path,'functions');
+addpath(genpath(func_path),genpath(func_path2))
 
-outdir_root = 'D:\Data\h_analysis_out';
+indir_root = 'E:'; % % location of saved graph measures, SOLAR heritability h2 values, and family relationship labels
+indir = fullfile(indir_root,'h_analysis');
 
-func_path = fullfile(workspace_path,'MATLAB','functions');
-func2_path = fullfile(proj_path,'mfile_h');
-
-addpath(genpath(func_path),genpath(func2_path))
+outdir_root = 'D:\Data\h_analysis_out'; % directory to save output files
 
 if isempty(gcp('nocreate')), parpool(16,'IdleTimeout',600), end
 
-save_flag = 1;
+%% select which dataset (MEG or fMRI), graph measures (global or local), and classification tasks to run
+save_flag = 0;
 data_flag = 2; % 1 - meg, 2 - fmri
 measure_flag = 2; % 1 - global, 2 - local
 analysis_flags = 1:4; % 1- three class, 2- MZ vs UR, 3- MZ vs SIB, 4- SIB vs UR
@@ -28,7 +28,7 @@ elseif measure_flag == 2
     diff_func = 'corr';
 end
 
-%% select MEG or fMRI
+%% define variables
 if measure_flag == 1
     measure_tag = 'GGM';
     Gnames = {'GE','CPL','T','S'};
@@ -39,14 +39,14 @@ elseif measure_flag == 2
 end
 
 if data_flag == 1
-    infile = fullfile(analysis_path,['HCP_MEG_',measure_tag,'_Source_100%PropThres.csv']);
+    infile = fullfile(indir,['HCP_MEG_',measure_tag,'_Source_100%PropThres.csv']);
     data_tag = 'meg';
     
     connames = {'dwPLI','AEC','lcAEC'};
     freqBands = {'Delta','Theta','Alpha','lBeta','hBeta','lGamma'};
     nfreq = length(freqBands);
 elseif data_flag == 2
-    infile = fullfile(analysis_path,['HCP_fMRI_',measure_tag,'_Source_100%PropThres.csv']);
+    infile = fullfile(indir,['HCP_fMRI_',measure_tag,'_Source_100%PropThres.csv']);
     data_tag = 'fmri';
     
     polarity_all = {'pos','neg'};
@@ -127,7 +127,7 @@ elseif data_flag == 2
 end
 
 %% construct relationship matrix
-csv_path = analysis_path;
+csv_path = indir;
 csv_infile = fullfile(csv_path,'HCP-YA_allSubjects_pedGT.csv');
 opts = detectImportOptions(csv_infile);
 opts.SelectedVariableNames = {'ID','FA','MO','FAMID','MZTWIN'};
@@ -221,7 +221,7 @@ else
     load(outfile_permstruc) 
 end
 
-%%
+%% run genetic fingerprinting algorithm (loop over selected classification tasks)
 niter = 1000; % 1000 100
 nfold = 5;
 
