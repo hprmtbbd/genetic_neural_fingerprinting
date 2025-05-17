@@ -3,21 +3,18 @@ clear,clc
 
 % written for MATLAB R2023b (needed newer version for swarmchat and boxchart)
 
-workspace_path = 'D:\workspace';
-proj_path = fullfile(workspace_path,'MEGConnHeritability_Manuscript');
-analysis_path = fullfile(proj_path,'h_analysis');
-
+workspace_path = 'D:\workspace'; % location of scripts and functions
 func_path = fullfile(workspace_path,'MATLAB','functions');
 addpath(genpath(func_path))
 
-outdir_root = 'D:\Data\h_analysis_out';
-outdir_fig = fullfile(proj_path,'Figures','version3_revision1');
+outdir_root = 'D:\Data\h_analysis_out'; % directory to save output files
+outdir_fig = fullfile(outdir_root,'Figures');
 if ~exist(outdir_fig,'dir'),mkdir(outdir_fig),end
 
 outfolder = 'ML_fingerprint_v2';
 outfolder2 = 'featsel_0';
 
-%%
+%% define variables
 col_tit = {'TPR','TNR','PPV','AUC'};
 tit_a = {'MZ','SIB','UR'};
 tits = {'MZ twins','Non-MZ siblings','Unrelated subjects','Weighted average'}';
@@ -31,7 +28,7 @@ data_tags = {'meg','fmri'};
 measure_tags = {'GGM','LGM'};
 measure_tits = {'Global Graph Measures','Local Graph Measures'};
 
-%%
+%% load genetic fingerprinting results
 analysis_flags = 1:4; % 1:4 [1,2]
 
 acc_array = []; auc_array = [];
@@ -122,7 +119,7 @@ end
 method_tits = {'MEG dwPLI'; 'MEG AEC'; 'MEG lcAEC'; 'fMRI Cor'};
 metric_tits = {'Accuracy','AUC'};
 
-%%
+%% plot genetic fingerprinting results (version 1 - bar plots)
 % figPos_a = [50,20,screenPos(3)*0.2*length(measure_tits),screenPos(4)];
 figPos_a = [50,50,screenPos(3)*0.8,screenPos(4)*0.5];
 
@@ -219,8 +216,7 @@ for iclass = 1:length(class_tits)
     save_figure_hp(h,save_flag_png,img_outfile2,dpi,save_flag_fig,img_outfile)
 end
 
-%% figures (second version)
-
+%% plot genetic fingerprinting results (version 2 - swarm plots)
 figPos_b = [50,50,screenPos(3)*0.8,screenPos(4)*0.5];
 C = [0.4940 0.1840 0.5560; 0.9290 0.6940 0.1250;  0.4660 0.6740 0.1880; 0 0.4470 0.7410];
 
@@ -296,9 +292,9 @@ for iclass = 2 % 1:length(class_tits)
 
 end
 
-%% supp info
+%% save supp info
 
-supp_dir = 'D:\Data\h_analysis_out\Supp_Data';
+supp_dir = fullfile(outdir_root,'Supp_Data');
 supp_dir1 = fullfile(supp_dir,'data4');
 if ~exist(supp_dir1,'dir'),mkdir(supp_dir1),end
 
@@ -322,7 +318,7 @@ for iclass = 1:length(class_tags)
     end
 end
 
-%% tables
+%% generate tables of genetic fingerprinting results
 outfile_xls = fullfile(outdir_fig,['ML_tables','.xlsx']);
 
 for ia = 1:length(analysis_flags)
