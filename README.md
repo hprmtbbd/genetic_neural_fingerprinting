@@ -1,5 +1,8 @@
 # Overview
-Custom analysis code for the manuscript entitled "Genetic fingerprinting with heritable phenotypes of the resting-state brain network topology," published in _Communications Biology_. All scripts were written in MATLAB R2020a or R2023b.
+Custom analysis code for the manuscript entitled "Genetic fingerprinting with heritable phenotypes of the resting-state brain network topology," published in _Communications Biology_ (https://www.nature.com/articles/s42003-024-06807-0). All scripts were written in MATLAB R2020a or R2023b.
+
+# Data
+A MATLAB-based pipeline was used to perform atlas-based source reconstruction, connectivity analysis, and graph theoretical analysis of resting-state MEG data from the Human Connectome Project database (https://github.com/hprmtbbd/HCP_MEG_source_conn_pipeline). The CONN toolbox in MATLAB was used to perform confound regression and atlas-based connectivity analysis of the resting-state fMRI data (https://web.conn-toolbox.org/), and the Brain Connectivity Toolbox v20170115 was used to derive graph measures from the connectivity matrices (https://sites.google.com/site/bctnet). The open-source MEG and fMRI data were obtained from the online HCP database (http://db.humanconnectome.org/). The SOLAR-Eclipse toolbox v8.1.1 (https://solar-eclipse-genetics.org) and APACE toolbox (https://www.nisox.org/Software/APACE) were used to derive heritability estimates for the graph measures in the MEG and fMRI datasets.
 
 # Scripts
 The mfile_h folder contains scripts for performing statistical analyses on the heritability values, generating figures and tables of the results, and implementing the genetic fingerprinting machine learning algorithm.
